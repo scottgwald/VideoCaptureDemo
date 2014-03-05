@@ -27,9 +27,7 @@ public class VideoCaptureActivity extends Activity {
     Camera camera;
 
     ImageButton recordButton;
-//    ImageButton mRecordButton;
 
-//    ImageButton mStopButton;
     ImageButton stopButton;
 
     FrameLayout cameraPreviewFrame;
@@ -51,11 +49,9 @@ public class VideoCaptureActivity extends Activity {
         mDummyView = new View(this);
         this.cameraPreviewFrame = (FrameLayout)super.findViewById(R.id.camera_preview);
         this.recordButton = (ImageButton)super.findViewById(R.id.recordButton);
-//        mRecordButton = (ImageButton)super.findViewById(R.id.recordButton);
-//        mStopButton = (ImageButton)super.findViewById(R.id.stopButton);
         this.stopButton = (ImageButton)super.findViewById(R.id.stopButton);
         this.toggleButtons(false);
-        //        // we'll enable this button once the camera is ready
+        // we'll enable this button once the camera is ready
         this.recordButton.setEnabled(false);
         mHandler = new Handler();
     }
@@ -92,15 +88,6 @@ public class VideoCaptureActivity extends Activity {
                             Toast.LENGTH_SHORT);
                 } else {
                     VideoCaptureActivity.this.initCamera(camera);
-                    //startRecording(recordButton);
-
-//                    mHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            stopRecording(mStopButton);
-//                        }
-//                    }, 5000);
-
                 }
             }
         }.execute();
@@ -111,8 +98,11 @@ public class VideoCaptureActivity extends Activity {
         this.camera = camera;
         // create a preview for our camera
         this.cameraPreview = new CameraPreview(VideoCaptureActivity.this, this.camera);
+
         // add the preview to our preview frame
+
         this.cameraPreviewFrame.addView(this.cameraPreview, 0);
+
         // enable just the record button
         this.recordButton.setEnabled(true);
         mHandler.postDelayed(new Runnable() {
@@ -165,24 +155,37 @@ public class VideoCaptureActivity extends Activity {
     // gets called by the button press
     public void newStartRecording() {
         Log.d(TAG, "startRecording()");
+
+        try {
+            camera.setPreviewDisplay(null);
+        } catch (java.io.IOException ioe) {
+            Log.d(TAG, "IOException nullifying preview display: " + ioe.getMessage());
+        }
+        camera.stopPreview();
+        camera.unlock();
+
         // we need to unlock the camera so that mediaRecorder can use it
-        this.camera.unlock(); // unnecessary in API >= 14
+        //this.camera.unlock(); // unnecessary in API >= 14
         // now we can initialize the media recorder and set it up with our
         // camera
         this.mediaRecorder = new MediaRecorder();
         this.mediaRecorder.setCamera(this.camera);
         this.mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
         this.mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-        this.mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+
+        int profileInt = CamcorderProfile.QUALITY_720P;
+        Log.v(TAG, "Checking for profile: " + CamcorderProfile.hasProfile(profileInt));
+        CamcorderProfile profile = CamcorderProfile.get(profileInt);
+        mediaRecorder.setOutputFormat(profile.fileFormat);
+        mediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
+        mediaRecorder.setVideoEncoder(profile.videoCodec);
+        mediaRecorder.setAudioEncodingBitRate(profile.audioBitRate);
+        mediaRecorder.setAudioChannels(profile.audioChannels);
+        mediaRecorder.setAudioSamplingRate(profile.audioSampleRate);
+        mediaRecorder.setAudioEncoder(profile.audioCodec);
+
         this.mediaRecorder.setOutputFile(this.initFile().getAbsolutePath());
-        //while (!this.cameraPreview.ready) {
-        //    try {
-        //        Log.v(TAG, "Waiting for cameraPreview.");
-        //        Thread.sleep(200);
-        //    } catch (InterruptedException e) {
-        //        e.printStackTrace();
-        //    }
-        //}
+
         this.mediaRecorder.setPreviewDisplay(this.cameraPreview.getHolder().getSurface());
         try {
             this.mediaRecorder.prepare();

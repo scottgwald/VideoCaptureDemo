@@ -2,8 +2,10 @@
 package com.marakana.android.videocapturedemo;
 
 import java.io.IOException;
+import java.util.List;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -28,6 +30,16 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // now that we have the surface, we can start the preview
         try {
             this.camera.setPreviewDisplay(holder);
+            Camera.Parameters params = camera.getParameters();
+            params.setPreviewFormat(ImageFormat.NV21);
+            params.setPreviewSize(640, 480);
+            List<String> FocusModes = params.getSupportedFocusModes();
+            if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+                params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+            }
+            params.setPreviewFpsRange(30000, 30000);
+            camera.setParameters(params);
+            holder.setFixedSize(640, 360);
             this.camera.startPreview();
             ready = true;
         } catch (IOException e) {
